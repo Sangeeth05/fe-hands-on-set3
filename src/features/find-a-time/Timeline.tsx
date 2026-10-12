@@ -21,8 +21,10 @@ function blockStyle({ start, end }: Interval) {
 
 function AttendeeRow({ name, busy }: AttendeeBusy) {
   return (
-    <div className="timeline-row">
-      <div className="timeline-label">{name}</div>
+    <div className="timeline-row" role="group" aria-label={name}>
+      <div className="timeline-label" aria-hidden="true">
+        {name}
+      </div>
       <div className="timeline-track">
         {busy.map((interval) => (
           <div
