@@ -7,6 +7,7 @@ import {
   getPeople,
 } from '../../api/mockServer'
 import type { NewBooking } from '../../api/types'
+import { usePageVisible } from '../../hooks/usePageVisible'
 
 export function usePeople() {
   return useQuery({ queryKey: ['people'], queryFn: ({ signal }) => getPeople(signal) })
@@ -19,11 +20,16 @@ export function usePeople() {
  */
 export function useAvailability(date: string, people: string[]) {
   const sortedPeople = [...people].sort()
+  const visible = usePageVisible()
 
   return useQuery({
     queryKey: ['availability', date, sortedPeople],
     queryFn: ({ signal }) => getBookingsForPeople(sortedPeople, date, signal),
     enabled: sortedPeople.length > 0,
+    // Poll only while someone can see it. TanStack's focus manager listens to
+    // visibilitychange, so returning to the tab also refetches straight away.
+    refetchInterval: visible ? 10_000 : false,
+    refetchOnWindowFocus: true,
   })
 }
 
