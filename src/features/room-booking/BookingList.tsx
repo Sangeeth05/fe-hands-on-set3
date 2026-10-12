@@ -23,9 +23,12 @@ function BookingList({ bookings, onCancel }: BookingListProps) {
               <div className="muted">{booking.attendees.join(', ')}</div>
             )}
           </div>
-          <button type="button" onClick={() => onCancel(booking)}>
+          <button
+            type="button"
+            aria-label={`Cancel ${booking.title}`}
+            onClick={() => onCancel(booking)}
+          >
             Cancel
-            <span className="visually-hidden"> {booking.title}</span>
           </button>
         </li>
       ))}

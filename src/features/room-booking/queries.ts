@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cancelBooking, createBooking, fetchBookings, fetchRooms } from './api'
-import type { Booking } from './types'
+import type { Booking, NewBooking } from './types'
 
 const bookingsKey = (roomId: string, date: string) => ['bookings', roomId, date] as const
 
@@ -20,7 +20,7 @@ export function useCreateBooking(roomId: string, date: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: createBooking,
+    mutationFn: (booking: NewBooking) => createBooking(booking),
     // Refetch on success and failure: a rejection may mean the schedule is stale.
     onSettled: () => queryClient.invalidateQueries({ queryKey: bookingsKey(roomId, date) }),
   })
@@ -31,7 +31,7 @@ export function useCancelBooking(roomId: string, date: string) {
   const key = bookingsKey(roomId, date)
 
   return useMutation({
-    mutationFn: cancelBooking,
+    mutationFn: (id: string) => cancelBooking(id),
     onMutate: async (id: string) => {
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<Booking[]>(key)
