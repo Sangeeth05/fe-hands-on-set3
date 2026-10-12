@@ -212,3 +212,26 @@ export async function createBooking(input: NewBooking): Promise<Booking> {
   bookings = [...bookings, booking]
   return { ...booking, attendees: [...booking.attendees] }
 }
+
+/**
+ * Dev-only helper: adds 30 people with 20 short bookings each on `date`, staggered so the
+ * common free time is fragmented. Returns the new people's emails.
+ */
+export function seedLoadTest(date: string): string[] {
+  const emails: string[] = []
+  for (let p = 1; p <= 30; p++) {
+    const email = `load${String(p).padStart(2, '0')}@acme.com`
+    emails.push(email)
+    if (!people.some((person) => person.email === email)) {
+      people = [...people, { email, name: `Load tester ${p}` }]
+    }
+    for (let b = 0; b < 20; b++) {
+      const start = 9 * 60 + b * 27 + (p % 9)
+      bookings = [
+        ...bookings,
+        { id: `b${nextBookingId++}`, title: 'Load test', date, start, end: start + 15, attendees: [email] },
+      ]
+    }
+  }
+  return emails
+}
