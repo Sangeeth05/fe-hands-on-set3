@@ -1,8 +1,8 @@
-import { toMinutes, todayIso } from '../lib/time'
-import type { Booking, Person, PersonBookings } from './types'
+import { formatTime, toMinutes, todayIso } from '../lib/time'
+import type { Booking, NewBooking, Person, PersonBookings, Room } from './types'
 
 export interface MockCall {
-  name: 'getPeople' | 'getBookingsForPeople'
+  name: 'getPeople' | 'getBookingsForPeople' | 'getAvailableRooms' | 'createBooking'
   emails?: string[]
   date?: string
 }
@@ -10,6 +10,8 @@ export interface MockCall {
 export interface MockServerConfig {
   /** Milliseconds to wait for a given call. Tests use this to make one call slower than another. */
   delay: (call: MockCall) => number
+  /** Chance (0-1) that createBooking finds one attendee was just booked by someone else. */
+  conflictRate: number
 }
 
 const MIN_DELAY_MS = 300
@@ -17,12 +19,25 @@ const MAX_DELAY_MS = 800
 
 const defaultConfig: MockServerConfig = {
   delay: () => MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS),
+  conflictRate: 0.25,
 }
 
 let config: MockServerConfig = defaultConfig
 
 export function configureMockServer(overrides: Partial<MockServerConfig>) {
   config = { ...config, ...overrides }
+}
+
+export type ApiErrorCode = 'CONFLICT' | 'ROOM_UNAVAILABLE'
+
+export class ApiError extends Error {
+  code: ApiErrorCode
+
+  constructor(code: ApiErrorCode, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.code = code
+  }
 }
 
 function seedPeople(): Person[] {
@@ -33,6 +48,15 @@ function seedPeople(): Person[] {
     { email: 'dave@acme.com', name: 'Dave' },
     { email: 'erin@acme.com', name: 'Erin' },
     { email: 'frank@acme.com', name: 'Frank' },
+  ]
+}
+
+function seedRooms(): Room[] {
+  return [
+    { id: 'r1', name: 'Aspen', capacity: 4 },
+    { id: 'r2', name: 'Birch', capacity: 8 },
+    { id: 'r3', name: 'Cedar', capacity: 12 },
+    { id: 'r4', name: 'Atrium', capacity: 40 },
   ]
 }
 
@@ -60,13 +84,17 @@ function seedBookings(): Booking[] {
 }
 
 let people = seedPeople()
+let rooms = seedRooms()
 let bookings = seedBookings()
+let nextBookingId = 100
 
 /** Restores seed data and default config. Used by tests. */
 export function resetMockServer() {
   config = defaultConfig
   people = seedPeople()
+  rooms = seedRooms()
   bookings = seedBookings()
+  nextBookingId = 100
 }
 
 function abortError(): DOMException {
@@ -93,6 +121,14 @@ function wait(call: MockCall, signal?: AbortSignal): Promise<void> {
   })
 }
 
+function nameOf(email: string): string {
+  return people.find((person) => person.email === email)?.name ?? email
+}
+
+function overlaps(booking: Booking, date: string, start: number, end: number): boolean {
+  return booking.date === date && booking.start < end && start < booking.end
+}
+
 export async function getPeople(signal?: AbortSignal): Promise<Person[]> {
   await wait({ name: 'getPeople' }, signal)
   return people.map((person) => ({ ...person }))
@@ -111,4 +147,68 @@ export async function getBookingsForPeople(
       .filter((b) => b.date === date && b.attendees.includes(email))
       .map((b) => ({ ...b, attendees: [...b.attendees] })),
   }))
+}
+
+/** Rooms that are big enough and free for the whole range. */
+export async function getAvailableRooms(
+  date: string,
+  start: number,
+  end: number,
+  minCapacity: number,
+  signal?: AbortSignal,
+): Promise<Room[]> {
+  await wait({ name: 'getAvailableRooms', date }, signal)
+  return rooms
+    .filter((room) => room.capacity >= minCapacity)
+    .filter((room) => !bookings.some((b) => b.roomId === room.id && overlaps(b, date, start, end)))
+    .map((room) => ({ ...room }))
+}
+
+/**
+ * Re-checks everything on the server, because the client's availability can be stale.
+ * Rejects with CONFLICT when an attendee is busy, or ROOM_UNAVAILABLE for the room.
+ */
+export async function createBooking(input: NewBooking): Promise<Booking> {
+  await wait({ name: 'createBooking', emails: input.attendees, date: input.date })
+
+  const busyAttendee = input.attendees.find((email) =>
+    bookings.some(
+      (b) => b.attendees.includes(email) && overlaps(b, input.date, input.start, input.end),
+    ),
+  )
+  if (busyAttendee) {
+    throw new ApiError('CONFLICT', `${nameOf(busyAttendee)} is no longer free at that time.`)
+  }
+
+  if (input.attendees.length > 0 && Math.random() < config.conflictRate) {
+    // Simulate someone else booking one of the attendees while the dialog was open.
+    const victim = input.attendees[Math.floor(Math.random() * input.attendees.length)]
+    bookings = [
+      ...bookings,
+      {
+        id: `b${nextBookingId++}`,
+        title: 'External meeting',
+        date: input.date,
+        start: input.start,
+        end: input.end,
+        attendees: [victim],
+      },
+    ]
+    throw new ApiError(
+      'CONFLICT',
+      `${nameOf(victim)} was just booked for ${formatTime(input.start)}-${formatTime(input.end)}.`,
+    )
+  }
+
+  const room = rooms.find((r) => r.id === input.roomId)
+  const roomTaken = bookings.some(
+    (b) => b.roomId === input.roomId && overlaps(b, input.date, input.start, input.end),
+  )
+  if (!room || room.capacity < input.attendees.length || roomTaken) {
+    throw new ApiError('ROOM_UNAVAILABLE', 'That room is no longer available. Pick another one.')
+  }
+
+  const booking: Booking = { ...input, id: `b${nextBookingId++}` }
+  bookings = [...bookings, booking]
+  return { ...booking, attendees: [...booking.attendees] }
 }

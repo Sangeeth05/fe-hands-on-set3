@@ -42,9 +42,10 @@ function AttendeeRow({ name, busy }: AttendeeBusy) {
 interface TimelineProps {
   attendees: AttendeeBusy[]
   slots: Interval[]
+  onSelectSlot: (slot: Interval) => void
 }
 
-function Timeline({ attendees, slots }: TimelineProps) {
+function Timeline({ attendees, slots, onSelectSlot }: TimelineProps) {
   return (
     <div className="timeline">
       <div className="timeline-row">
@@ -62,11 +63,13 @@ function Timeline({ attendees, slots }: TimelineProps) {
         <div className="timeline-label">Everyone free</div>
         <div className="timeline-track">
           {slots.map((slot) => (
-            <div
+            <button
               key={slot.start}
+              type="button"
               className="free-slot"
               style={blockStyle(slot)}
-              title={`Free ${formatTime(slot.start)} to ${formatTime(slot.end)}`}
+              aria-label={`Free ${formatTime(slot.start)} to ${formatTime(slot.end)}`}
+              onClick={() => onSelectSlot(slot)}
             />
           ))}
         </div>

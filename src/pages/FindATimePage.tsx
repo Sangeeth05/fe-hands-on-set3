@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAvailability, usePeople } from '../features/find-a-time/queries'
 import Timeline, { type AttendeeBusy } from '../features/find-a-time/Timeline'
-import { freeSlotsFromMerged, mergeIntervals } from '../lib/freeSlots'
+import BookingDialog from '../features/find-a-time/BookingDialog'
+import { freeSlotsFromMerged, mergeIntervals, type Interval } from '../lib/freeSlots'
 import { todayIso } from '../lib/time'
 import '../features/find-a-time/find-a-time.css'
 
@@ -28,6 +29,8 @@ function parsePeople(value: string | null): string[] {
 function FindATimePage() {
   const [params, setParams] = useSearchParams()
   const [today] = useState(() => todayIso())
+  // The slot being booked: start, plus the end we computed from the duration at click time.
+  const [booking, setBooking] = useState<Interval | null>(null)
 
   const date = parseDate(params.get('date')) ?? today
   const duration = parseDuration(params.get('d'))
@@ -119,11 +122,25 @@ function FindATimePage() {
       {availability.isError && <p role="alert">Could not load availability.</p>}
       {availability.data && (
         <>
-          <Timeline attendees={attendees} slots={slots} />
+          <Timeline
+            attendees={attendees}
+            slots={slots}
+            onSelectSlot={(slot) => setBooking({ start: slot.start, end: slot.start + duration })}
+          />
           {slots.length === 0 && (
             <p className="muted">No common free time of {duration} minutes on this day.</p>
           )}
         </>
+      )}
+
+      {booking && (
+        <BookingDialog
+          date={date}
+          start={booking.start}
+          end={booking.end}
+          attendees={attendees}
+          onClose={() => setBooking(null)}
+        />
       )}
     </section>
   )

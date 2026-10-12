@@ -15,6 +15,21 @@ export interface Booking {
   roomId?: string
 }
 
+export interface Room {
+  id: string
+  name: string
+  capacity: number
+}
+
+export interface NewBooking {
+  title: string
+  date: string
+  start: number
+  end: number
+  attendees: string[]
+  roomId: string
+}
+
 export interface PersonBookings {
   email: string
   bookings: Booking[]
