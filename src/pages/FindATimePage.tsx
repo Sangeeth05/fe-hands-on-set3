@@ -1,8 +1,117 @@
+import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useAvailability, usePeople } from '../features/find-a-time/queries'
+import { todayIso } from '../lib/time'
+import '../features/find-a-time/find-a-time.css'
+
+const DURATIONS = [15, 30, 45, 60, 90, 120]
+const DEFAULT_DURATION = 30
+
+function parseDate(value: string | null): string | undefined {
+  if (value && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value))) {
+    return value
+  }
+  return undefined
+}
+
+function parseDuration(value: string | null): number {
+  const duration = Number(value)
+  return DURATIONS.includes(duration) ? duration : DEFAULT_DURATION
+}
+
+function parsePeople(value: string | null): string[] {
+  return value ? [...new Set(value.split(',').filter(Boolean))].sort() : []
+}
+
 function FindATimePage() {
+  const [params, setParams] = useSearchParams()
+  const [today] = useState(() => todayIso())
+
+  const date = parseDate(params.get('date')) ?? today
+  const duration = parseDuration(params.get('d'))
+  const selected = parsePeople(params.get('people'))
+
+  const people = usePeople()
+  const availability = useAvailability(date, selected)
+
+  function updateParams(changes: { date?: string; d?: number; people?: string[] }) {
+    setParams(
+      {
+        date: changes.date ?? date,
+        d: String(changes.d ?? duration),
+        people: (changes.people ?? selected).join(','),
+      },
+      { replace: true },
+    )
+  }
+
+  function togglePerson(email: string) {
+    updateParams({
+      people: selected.includes(email)
+        ? selected.filter((other) => other !== email)
+        : [...selected, email],
+    })
+  }
+
   return (
-    <section>
+    <section className="find-a-time">
       <h1>Find a Time</h1>
-      <p>Placeholder for the Find a Time question.</p>
+
+      <div className="filters">
+        <label>
+          Date
+          <input
+            type="date"
+            value={date}
+            onChange={(event) => {
+              const next = parseDate(event.target.value)
+              if (next) updateParams({ date: next })
+            }}
+          />
+        </label>
+        <label>
+          Duration
+          <select
+            value={duration}
+            onChange={(event) => updateParams({ d: Number(event.target.value) })}
+          >
+            {DURATIONS.map((minutes) => (
+              <option key={minutes} value={minutes}>
+                {minutes} minutes
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <fieldset className="people">
+        <legend>Attendees</legend>
+        {people.isPending && <span className="muted">Loading people…</span>}
+        {people.isError && <span role="alert">Could not load people.</span>}
+        {people.data?.map((person) => (
+          <label key={person.email} className="checkbox">
+            <input
+              type="checkbox"
+              checked={selected.includes(person.email)}
+              onChange={() => togglePerson(person.email)}
+            />
+            {person.name}
+          </label>
+        ))}
+      </fieldset>
+
+      {selected.length === 0 && <p className="muted">Select at least one attendee.</p>}
+      {selected.length > 0 && availability.isPending && <p className="muted">Loading availability…</p>}
+      {availability.isError && <p role="alert">Could not load availability.</p>}
+      {availability.data && (
+        <ul>
+          {availability.data.map((person) => (
+            <li key={person.email}>
+              {person.email}: {person.bookings.length} bookings
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   )
 }
