@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useDeferredValue, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { seedLoadTest } from '../api/mockServer'
 import { useAvailability, usePeople } from '../features/find-a-time/queries'
 import Timeline, { type AttendeeBusy } from '../features/find-a-time/Timeline'
 import BookingDialog from '../features/find-a-time/BookingDialog'
@@ -36,6 +38,7 @@ function FindATimePage() {
   const duration = parseDuration(params.get('d'))
   const selected = parsePeople(params.get('people'))
 
+  const queryClient = useQueryClient()
   const people = usePeople()
   const availability = useAvailability(date, selected)
 
@@ -48,8 +51,19 @@ function FindATimePage() {
       })),
     [availability.data, people.data],
   )
+  // Merge once per response; changing the duration only re-filters the gaps.
   const merged = useMemo(() => mergeIntervals(attendees.flatMap((a) => a.busy)), [attendees])
-  const slots = useMemo(() => freeSlotsFromMerged(merged, duration), [merged, duration])
+  const deferredDuration = useDeferredValue(duration)
+  const slots = useMemo(
+    () => freeSlotsFromMerged(merged, deferredDuration),
+    [merged, deferredDuration],
+  )
+
+  function loadTestData() {
+    const emails = seedLoadTest(date)
+    void queryClient.invalidateQueries({ queryKey: ['people'] })
+    updateParams({ people: emails })
+  }
 
   function updateParams(changes: { date?: string; d?: number; people?: string[] }) {
     setParams(
@@ -117,6 +131,14 @@ function FindATimePage() {
         ))}
       </fieldset>
 
+      {import.meta.env.DEV && (
+        <p>
+          <button type="button" onClick={loadTestData}>
+            Load 30×20 test data
+          </button>
+        </p>
+      )}
+
       {selected.length === 0 && <p className="muted">Select at least one attendee.</p>}
       {selected.length > 0 && availability.isPending && <p className="muted">Loading availability…</p>}
       {availability.isError && <p role="alert">Could not load availability.</p>}
@@ -125,10 +147,14 @@ function FindATimePage() {
           <Timeline
             attendees={attendees}
             slots={slots}
-            onSelectSlot={(slot) => setBooking({ start: slot.start, end: slot.start + duration })}
+            onSelectSlot={(slot) =>
+              setBooking({ start: slot.start, end: slot.start + deferredDuration })
+            }
           />
           {slots.length === 0 && (
-            <p className="muted">No common free time of {duration} minutes on this day.</p>
+            <p className="muted">
+              No common free time of {deferredDuration} minutes on this day.
+            </p>
           )}
         </>
       )}

@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { memo, useRef, useState, type KeyboardEvent } from 'react'
 import { DAY_END, DAY_START, type Interval } from '../../lib/freeSlots'
 import { formatTime } from '../../lib/time'
 
@@ -20,7 +20,7 @@ function blockStyle({ start, end }: Interval) {
   return { left: `${percent(start)}%`, width: `${percent(end) - percent(start)}%` }
 }
 
-function AttendeeRow({ name, busy }: AttendeeBusy) {
+const AttendeeRow = memo(function AttendeeRow({ name, busy }: AttendeeBusy) {
   return (
     <div className="timeline-row" role="group" aria-label={name}>
       <div className="timeline-label" aria-hidden="true">
@@ -38,7 +38,7 @@ function AttendeeRow({ name, busy }: AttendeeBusy) {
       </div>
     </div>
   )
-}
+})
 
 interface FreeSlotsProps {
   slots: Interval[]
