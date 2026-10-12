@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import { toIsoDate } from '../features/room-booking/api'
 import BookingForm from '../features/room-booking/BookingForm'
 import BookingList from '../features/room-booking/BookingList'
-import { useBookings, useRooms } from '../features/room-booking/queries'
+import { useBookings, useCancelBooking, useRooms } from '../features/room-booking/queries'
+import type { Booking } from '../features/room-booking/types'
 
 function parseDate(value: string | null): string | undefined {
   if (value && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value))) {
@@ -20,6 +21,14 @@ function RoomBookingPage() {
   const date = parseDate(params.get('date')) ?? today
   const roomId = rooms.data?.find((room) => room.id === params.get('room'))?.id ?? rooms.data?.[0]?.id
   const bookings = useBookings(roomId, date)
+
+  const cancelBooking = useCancelBooking(roomId ?? '', date)
+
+  function handleCancel(booking: Booking) {
+    if (window.confirm(`Cancel "${booking.title}" (${booking.start}–${booking.end})?`)) {
+      cancelBooking.mutate(booking.id)
+    }
+  }
 
   // Write the resolved room and date into the URL so a refresh or shared link shows the same view.
   useEffect(() => {
@@ -64,7 +73,10 @@ function RoomBookingPage() {
       {rooms.isError && <p role="alert">Could not load rooms.</p>}
       {bookings.isPending && !rooms.isError && <p className="muted">Loading…</p>}
       {bookings.isError && <p role="alert">Could not load bookings.</p>}
-      {bookings.data && <BookingList bookings={bookings.data} />}
+      {cancelBooking.isError && (
+        <p role="alert">Could not cancel the booking: {cancelBooking.error.message}</p>
+      )}
+      {bookings.data && <BookingList bookings={bookings.data} onCancel={handleCancel} />}
 
       {roomId && bookings.data && (
         <BookingForm key={`${roomId}-${date}`} roomId={roomId} date={date} bookings={bookings.data} />
