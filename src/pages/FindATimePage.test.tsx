@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { configureMockServer, resetMockServer } from '../api/mockServer'
@@ -64,5 +64,62 @@ describe('FindATimePage availability', () => {
     expect(screen.getByText('Loading availability…')).toBeVisible()
     expect(await screen.findByRole('group', { name: 'Bob' })).toBeVisible()
     expect(screen.getByRole('group', { name: 'Alice' })).toBeVisible()
+  })
+})
+
+describe('FindATimePage booking', () => {
+  const url = '/find-a-time?people=alice@acme.com,bob@acme.com&d=30'
+
+  it('books a slot in a free room and recalculates availability', async () => {
+    const user = userEvent.setup()
+    configureMockServer({ delay: () => 0, conflictRate: 0 })
+    renderPage(url)
+
+    await user.click(await screen.findByRole('option', { name: 'Free 11:00 to 13:00' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Book a meeting' })
+    expect(dialog).toHaveTextContent('11:00–11:30')
+    expect(dialog).toHaveTextContent('Attendees: Alice, Bob')
+    await waitFor(() => expect(within(dialog).getByLabelText('Room')).toHaveValue('r1'))
+
+    await user.type(within(dialog).getByLabelText('Title'), 'Sync')
+    await user.click(within(dialog).getByRole('button', { name: 'Book' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(await screen.findByRole('option', { name: 'Free 11:30 to 13:00' })).toBeVisible()
+  })
+
+  it('shows a conflict and recalculates the free slots', async () => {
+    const user = userEvent.setup()
+    configureMockServer({ delay: () => 0, conflictRate: 1 })
+    renderPage(url)
+
+    await user.click(await screen.findByRole('option', { name: 'Free 11:00 to 13:00' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Book a meeting' })
+    await waitFor(() => expect(within(dialog).getByLabelText('Room')).toHaveValue('r1'))
+    await user.type(within(dialog).getByLabelText('Title'), 'Sync')
+    await user.click(within(dialog).getByRole('button', { name: 'Book' }))
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(/was just booked/)
+    expect(await screen.findByRole('option', { name: 'Free 11:30 to 13:00' })).toBeVisible()
+  })
+
+  it('opens the dialog from the keyboard with the focused slot', async () => {
+    const user = userEvent.setup()
+    configureMockServer({ delay: () => 0 })
+    renderPage(url)
+
+    const first = await screen.findByRole('option', { name: 'Free 09:00 to 09:30' })
+    expect(screen.getByRole('status')).toHaveTextContent('3 free slots')
+    first.focus()
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('option', { name: 'Free 11:00 to 13:00' })).toHaveFocus()
+    await user.keyboard('{ArrowRight}{ArrowRight}{ArrowLeft}')
+    expect(screen.getByRole('option', { name: 'Free 14:00 to 18:00' })).toHaveFocus()
+    await user.keyboard('{ArrowLeft}{Enter}')
+
+    expect(await screen.findByRole('dialog', { name: 'Book a meeting' })).toHaveTextContent(
+      '11:00–11:30',
+    )
   })
 })
