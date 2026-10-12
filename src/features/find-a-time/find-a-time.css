@@ -1,0 +1,218 @@
+.find-a-time {
+  --border: #d9dee3;
+  --muted: #52606d;
+  --accent: #1f6feb;
+}
+
+.find-a-time .muted {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.find-a-time [role='alert'] {
+  margin: 0.25rem 0;
+  color: #b42318;
+  font-size: 0.9rem;
+}
+
+.find-a-time label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.find-a-time label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  font-weight: 400;
+}
+
+.find-a-time input,
+.find-a-time select,
+.find-a-time button {
+  font: inherit;
+}
+
+.find-a-time input[type='date'],
+.find-a-time input[type='text'],
+.find-a-time select {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #b8c1cc;
+  border-radius: 4px;
+}
+
+.find-a-time button {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #b8c1cc;
+  border-radius: 4px;
+  background: #f5f7fa;
+  cursor: pointer;
+}
+
+.find-a-time button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.find-a-time button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.find-a-time .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.find-a-time .people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0 0 1.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.find-a-time .people legend {
+  padding: 0 0.25rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.find-a-time .timeline {
+  margin-top: 1rem;
+  --label-width: 8rem;
+}
+
+.find-a-time .timeline-row {
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+}
+
+.find-a-time .timeline-label {
+  flex: 0 0 var(--label-width);
+  padding-right: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.find-a-time .timeline-track,
+.find-a-time .timeline-hours {
+  position: relative;
+  flex: 1;
+}
+
+.find-a-time .timeline-track {
+  height: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    to right,
+    transparent,
+    transparent calc(100% / 9 - 1px),
+    var(--border) calc(100% / 9 - 1px),
+    var(--border) calc(100% / 9)
+  );
+}
+
+.find-a-time .timeline-hours {
+  height: 1.25rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.find-a-time .timeline-hours span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.find-a-time .busy-block {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+  background: #9aa5b1;
+}
+
+.find-a-time .timeline-free {
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  background: #e6f6ec;
+}
+
+.find-a-time .timeline-free .timeline-label {
+  padding-left: 0.5rem;
+  color: #05603a;
+}
+
+.find-a-time .free-slot {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+  background: #12b76a;
+}
+
+.find-a-time .free-slot {
+  padding: 0;
+  border: none;
+}
+
+.find-a-time .free-slot:focus-visible {
+  outline: 2px solid #05603a;
+  outline-offset: 1px;
+}
+
+.find-a-time dialog {
+  min-width: min(28rem, 90vw);
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.find-a-time dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+
+.find-a-time .booking-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.find-a-time .booking-dialog h2,
+.find-a-time .booking-dialog p {
+  margin: 0;
+}
+
+.find-a-time .dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.find-a-time .free-slot {
+  cursor: pointer;
+}
+
+.find-a-time .free-slot[aria-selected='true']:focus {
+  outline: 2px solid #05603a;
+  outline-offset: 1px;
+}
+
+.find-a-time .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
