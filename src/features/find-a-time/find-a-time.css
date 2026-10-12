@@ -159,3 +159,42 @@
   border-radius: 3px;
   background: #12b76a;
 }
+
+.find-a-time .free-slot {
+  padding: 0;
+  border: none;
+}
+
+.find-a-time .free-slot:focus-visible {
+  outline: 2px solid #05603a;
+  outline-offset: 1px;
+}
+
+.find-a-time dialog {
+  min-width: min(28rem, 90vw);
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.find-a-time dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+
+.find-a-time .booking-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.find-a-time .booking-dialog h2,
+.find-a-time .booking-dialog p {
+  margin: 0;
+}
+
+.find-a-time .dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
