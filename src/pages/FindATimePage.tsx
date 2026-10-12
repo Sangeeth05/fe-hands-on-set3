@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAvailability, usePeople } from '../features/find-a-time/queries'
+import Timeline, { type AttendeeBusy } from '../features/find-a-time/Timeline'
+import { freeSlotsFromMerged, mergeIntervals } from '../lib/freeSlots'
 import { todayIso } from '../lib/time'
 import '../features/find-a-time/find-a-time.css'
 
@@ -33,6 +35,18 @@ function FindATimePage() {
 
   const people = usePeople()
   const availability = useAvailability(date, selected)
+
+  const attendees = useMemo<AttendeeBusy[]>(
+    () =>
+      (availability.data ?? []).map(({ email, bookings }) => ({
+        email,
+        name: people.data?.find((person) => person.email === email)?.name ?? email,
+        busy: mergeIntervals(bookings),
+      })),
+    [availability.data, people.data],
+  )
+  const merged = useMemo(() => mergeIntervals(attendees.flatMap((a) => a.busy)), [attendees])
+  const slots = useMemo(() => freeSlotsFromMerged(merged, duration), [merged, duration])
 
   function updateParams(changes: { date?: string; d?: number; people?: string[] }) {
     setParams(
@@ -104,13 +118,12 @@ function FindATimePage() {
       {selected.length > 0 && availability.isPending && <p className="muted">Loading availability…</p>}
       {availability.isError && <p role="alert">Could not load availability.</p>}
       {availability.data && (
-        <ul>
-          {availability.data.map((person) => (
-            <li key={person.email}>
-              {person.email}: {person.bookings.length} bookings
-            </li>
-          ))}
-        </ul>
+        <>
+          <Timeline attendees={attendees} slots={slots} />
+          {slots.length === 0 && (
+            <p className="muted">No common free time of {duration} minutes on this day.</p>
+          )}
+        </>
       )}
     </section>
   )
