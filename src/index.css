@@ -12,3 +12,30 @@
 body {
   margin: 0;
 }
+
+.nav {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid #d9dee3;
+}
+
+.nav a {
+  color: #52606d;
+  text-decoration: none;
+}
+
+.nav a:hover {
+  color: #1f2933;
+}
+
+.nav a.active {
+  color: #1f2933;
+  font-weight: 600;
+}
+
+.content {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
