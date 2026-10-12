@@ -198,3 +198,21 @@
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
+
+.find-a-time .free-slot {
+  cursor: pointer;
+}
+
+.find-a-time .free-slot[aria-selected='true']:focus {
+  outline: 2px solid #05603a;
+  outline-offset: 1px;
+}
+
+.find-a-time .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
