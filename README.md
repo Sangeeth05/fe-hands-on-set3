@@ -17,7 +17,7 @@ npm run build
 
 | # | Question | PR link |
 |---|----------|---------|
-| 1 | Room Booking | (pending) |
+| 1 | Room Booking | [#1](https://github.com/Sangeeth05/fe-hands-on-set3/pull/1) |
 | 2 | Find a Time | (pending) |
 
 ## Q2: Find a Time (`/find-a-time`)
