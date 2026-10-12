@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toIsoDate } from '../features/room-booking/api'
+import BookingForm from '../features/room-booking/BookingForm'
 import BookingList from '../features/room-booking/BookingList'
 import { useBookings, useRooms } from '../features/room-booking/queries'
 
@@ -64,6 +65,10 @@ function RoomBookingPage() {
       {bookings.isPending && !rooms.isError && <p className="muted">Loading…</p>}
       {bookings.isError && <p role="alert">Could not load bookings.</p>}
       {bookings.data && <BookingList bookings={bookings.data} />}
+
+      {roomId && bookings.data && (
+        <BookingForm key={`${roomId}-${date}`} roomId={roomId} date={date} bookings={bookings.data} />
+      )}
     </section>
   )
 }
